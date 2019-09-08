@@ -1,5 +1,7 @@
 # [OpenStreetMap](www.openstreetmap.org) to [Valve Map Format](https://developer.valvesoftware.com/wiki/Valve_Map_Format) converter
 
+![Screenshot](res/Screenshot.png)
+
 This is a console program that imports *.osm text file, and exports vmf and obj.
 Currently, it uses information only about buildings.
 

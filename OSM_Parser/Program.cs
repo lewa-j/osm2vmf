@@ -12,12 +12,13 @@ namespace OSM_Parser
 	class Settings
 	{
 		public static double scale = 1;
-		public static double yAndgle = 0;//-29;//NewYork
+		public static double yAndgle = -29;//NewYork
 		public static string wallsMaterial = "building_template/building_template007c";
 		public static string roofMaterial = "building_template/roof_template001a";
 		public static string ceilingMaterial = "concrete/concretefloor001a";
-		public static bool cull = false;
-		public static Rect2D cullBounding = new Rect2D(-150, -170, 300, 410);//Rect2D(-310,-400,610,800);
+		public static int lightmapscale = 32;
+		public static bool cull = true;
+		public static Rect2D cullBounding = new Rect2D(-310,-400,610,800);//Rect2D(-150, -170, 300, 410);//
 	}
 
 	class Program
@@ -160,6 +161,8 @@ namespace OSM_Parser
 				sw.Write("\n");
 			}
 
+			Console.WriteLine("obj: verts count {0}",v);
+
 			sw.Close();
 		}
 
@@ -182,7 +185,8 @@ namespace OSM_Parser
 			
 			double s = 30.0 * Settings.scale;
 			sw.Write("world\n{\n");
-			sw.Write("\"id\" \"1\"\n\"classname\" \"worldspawn\"\n");
+			sw.Write("\"id\" \"1\"\n\"classname\" \"worldspawn\"\n\"skyname\" \"sky_day01_01\"\n");
+			//
 			for (int i = 0; i < map.buildings.Count; i++)
 			{
 				OsmBuilding bd = map.buildings[i];
@@ -217,9 +221,12 @@ namespace OSM_Parser
 						v2.z *= -1;
 						v3.z *= -1;
 
-						v1 = new vec3(v1.x, v1.z, v1.y);
-						v2 = new vec3(v2.x, v2.z, v2.y);
-						v3 = new vec3(v3.x, v3.z, v3.y);
+						//v1 += (v1 - v3)*4;
+						//v2 += (v2 - v3)*4;
+
+						v1 = new vec3(v1.x, v1.z, v1.y).Snap();
+						v2 = new vec3(v2.x, v2.z, v2.y).Snap();
+						v3 = new vec3(v3.x, v3.z, v3.y).Snap();
 
 						vec3 uaxis = new vec3(v2.x - v1.x, v2.y - v1.y, 0);
 						uaxis.Normalize();
@@ -230,7 +237,7 @@ namespace OSM_Parser
 						sw.Write("\t\t\"uaxis\" \"[" + uaxis.ToString() + " 0] 0.25\"\n");
 						sw.Write("\t\t\"vaxis\" \"[0 0 -1 0] 0.25\"\n");
 						//"rotation" "0"
-						sw.Write("\t\t\"lightmapscale\" \"32\"\n");
+						sw.Write("\t\t\"lightmapscale\" \""+Settings.lightmapscale+"\"\n");
 						sw.Write("\t}\n");
 					}
 					//top
@@ -239,6 +246,7 @@ namespace OSM_Parser
 					sw.Write("\t\t\"material\" \""+Settings.roofMaterial+"\"\n");
 					sw.Write("\t\t\"uaxis\" \"[1 0 0 0] 0.25\"\n");
 					sw.Write("\t\t\"vaxis\" \"[0 -1 0 0] 0.25\"\n");
+					sw.Write("\t\t\"lightmapscale\" \"" + Settings.lightmapscale + "\"\n");
 					sw.Write("\t}\n");
 					//bottom
 					sw.Write("\tside\n\t{\n");
@@ -246,14 +254,87 @@ namespace OSM_Parser
 					sw.Write("\t\t\"material\" \""+Settings.ceilingMaterial+"\"\n");
 					sw.Write("\t\t\"uaxis\" \"[1 0 0 0] 0.25\"\n");
 					sw.Write("\t\t\"vaxis\" \"[0 -1 0 0] 0.25\"\n");
+					sw.Write("\t\t\"lightmapscale\" \"" + Settings.lightmapscale + "\"\n");
 					sw.Write("\t}\n");
 
 					sw.Write("}\n");//end solid
 				}
 			}
+
+			//sky and ground
+			//(-150, -170, 300, 410)
+			/*VMFWriteSolid(sw, brushId++, new vec3(-5120, -7680, 8128), new vec3(5120, 5312, 8192), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(-5120, -7680, 0), new vec3(-5056, 5312, 8128), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(5056, -7680, 0), new vec3(5120, 5312, 8128), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(-5056, 5248, 0), new vec3(5056, 5312, 8128), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(-5056, -7680, 0), new vec3(5056, -7616, 8128), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(-5120, -7680, -64), new vec3(5120, 5312, 0), "concrete/concretefloor005a");*/
+			VMFWriteSolid(sw, brushId++, new vec3(-12288, -15360, 14000), new vec3(12288, 12288, 14064), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(-12288, -15360, -64), new vec3(12288, 12288, 0), "concrete/concretefloor005a");
+			VMFWriteSolid(sw, brushId++, new vec3(-12288, -15360, 0), new vec3(-12224, 12288, 14064), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(12224, -15360, 0), new vec3(12288, 12288, 14064), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(-12288, 12224, 0), new vec3(12288, 12288, 14064), "tools/toolsskybox");
+			VMFWriteSolid(sw, brushId++, new vec3(-12288, -15360, 0), new vec3(12288, -15296, 14064), "tools/toolsskybox");
+
 			sw.Write("}\n");//end world
 
+			//light
+			sw.Write("entity\n{\n");
+			//sw.Write("\t\"id\" \"{0}\"\n",id);
+			sw.Write("\t\"classname\" \"light_environment\"\n");
+			sw.Write("\t\"angles\" \"0 345 0\"\n");
+			sw.Write("\t\"pitch\" \"-60\"\n");
+			sw.Write("\t\"SunSpreadAngle\" \"1\"\n");
+			sw.Write("\t\"_ambient\" \"255 255 255 20\"\n");
+			sw.Write("\t\"_ambientHDR\" \"-1 -1 -1 1\"\n");
+			sw.Write("\t\"_AmbientScaleHDR\" \"1\"\n");
+			sw.Write("\t\"_light\" \"255 255 255 200\"\n");
+			sw.Write("\t\"_lightHDR\" \"-1 -1 -1 1\"\n");
+			sw.Write("\t\"_lightscaleHDR\" \"1\"\n");
+			sw.Write("\t\"origin\" \"-320 -4607 128\"\n");
+			sw.Write("}\n");
+
+			//player
+			sw.Write("entity\n{\n");
+			//sw.Write("\t\"id\" \"{0}\"\n",id);
+			sw.Write("\t\"classname\" \"info_player_start\"\n");
+			sw.Write("\t\"angles\" \"0 0 0\"\n");
+			sw.Write("\t\"origin\" \"-384 -4601 16\"\n");
+			sw.Write("}\n");
+
 			sw.Close();
+
+			Console.WriteLine("vmf: brushes count {0}", brushId);
+		}
+
+		public static void VMFWriteSolid(StreamWriter sw, long brushId, vec3 bbmin, vec3 bbmax, string material)
+		{
+			sw.Write("solid\n{\n");
+			sw.Write("\t\"id\" \"{0}\"\n", brushId);
+
+			WVFWriteSide(sw, new vec3(bbmin.x, bbmax.y, bbmax.z), bbmax,                               new vec3(bbmax.x,bbmin.y,bbmax.z), new vec3(0, - 1, 0), material);
+			WVFWriteSide(sw, new vec3(bbmin.x, bbmax.y, bbmax.z), new vec3(bbmin.x, bbmin.y, bbmax.z), bbmin, new vec3(0, 0, -1), material);
+			WVFWriteSide(sw, new vec3(bbmax.x, bbmax.y, bbmin.z), new vec3(bbmax.x, bbmin.y, bbmin.z), new vec3(bbmax.x,bbmin.y,bbmax.z), new vec3(0, 0, -1), material);
+			WVFWriteSide(sw, bbmax,                               new vec3(bbmin.x, bbmax.y, bbmax.z), new vec3(bbmin.x, bbmax.y, bbmin.z), new vec3(0, 0, -1), material);
+			WVFWriteSide(sw, new vec3(bbmax.x, bbmin.y, bbmin.z), bbmin,                               new vec3(bbmin.x, bbmin.y, bbmax.z), new vec3(0, 0, -1), material);
+			WVFWriteSide(sw, new vec3(bbmax.x, bbmin.y, bbmin.z), new vec3(bbmax.x, bbmax.y, bbmin.z), new vec3(bbmin.x, bbmax.y, bbmin.z), new vec3(-1, 0, 0), material);
+
+			sw.Write("}\n");//end solid
+		}
+		public static void WVFWriteSide(StreamWriter sw, vec3 v1, vec3 v2, vec3 v3, vec3 vaxis, string material)
+		{
+
+			vec3 uaxis = new vec3(v2.x - v1.x, v2.y - v1.y, 0);
+			uaxis.Normalize();
+
+			sw.Write("\tside\n\t{\n");
+			sw.Write("\t\t\"plane\" \"(" + v1.ToString() + ") (" + v2.ToString() + ") (" + v3.ToString() + ")\"\n");
+			sw.Write("\t\t\"material\" \"" + material + "\"\n");
+			sw.Write("\t\t\"uaxis\" \"[" + uaxis.ToString() + " 0] 0.25\"\n");
+			sw.Write("\t\t\"vaxis\" \"[" + vaxis.ToString() + " 0] 0.25\"\n");
+			//"rotation" "0"
+			sw.Write("\t\t\"lightmapscale\" \"" + Settings.lightmapscale + "\"\n");
+			sw.Write("\t}\n");
 		}
 	}
 
@@ -287,6 +368,12 @@ namespace OSM_Parser
 				vec3 current = At(i);
 				//vec3 prev = (At(i - 1) - current).Normalize();
 				//vec3 next = (At(i + 1) - current).Normalize();
+
+				//if (vec3.Dot(prev, next) >= -1+(tolerance*0.05))
+				//	continue;
+				//if (Math.Atan2(prev.x * next.z - prev.z * next.x, prev.x * next.x + prev.z * next.z) < 0)
+				//	continue;
+
 				vec3 prev = At(i - 1);
 				vec3 next = At(i + 1);
 
@@ -338,6 +425,7 @@ namespace OSM_Parser
 		public float ele;
 		public int levels;
 		public bool outline;
+		public bool part;
 
 		//public Rect2D bbox;
 	}
@@ -409,6 +497,7 @@ namespace OSM_Parser
 				{
 					long id = long.Parse(n.Attributes.GetNamedItem("id").Value);
 					bool building = false;
+					bool buildingPart = false;
 					float height = 0;
 					float min_height = 0;
 					float ele=0;
@@ -429,7 +518,7 @@ namespace OSM_Parser
 							//<tag k="building:part" v="yes"/>
 							else if (k == "building:part")
 							{
-								building = true;
+								buildingPart = true;
 							}
 							//<tag k="height" v="160"/>
 							else if (k == "height")
@@ -468,7 +557,7 @@ namespace OSM_Parser
 							refIds.Add(refId);
 						}
 					}
-					if (building)
+					if (building || buildingPart)
 					{
 						//Console.Out.WriteLine("building: id " + id + " height " + height + " levels " + levels + " nodes count " + refIds.Count);
 
@@ -484,6 +573,7 @@ namespace OSM_Parser
 						bd.min_height = min_height;
 						bd.ele = ele;
 						bd.nodeIds = refIds.ToArray();
+						bd.part = buildingPart;
 						buildings.Add(bd);
 					}
 				}
@@ -530,12 +620,16 @@ namespace OSM_Parser
 						{
 							if (buildings[i].id == outlineId) {
 								OsmBuilding b = buildings[i];
-								b.outline = true;
-								if (b.ele > 0)
-									b.height = b.ele;
-								else
-									b.height = levelHeight;
-								buildings[i] = b;
+								if (!b.part)
+								{
+									b.outline = true;
+									if (b.ele > 0)
+										b.height = b.ele;
+									else
+										b.height = levelHeight;
+									buildings[i] = b;
+								}
+								break;
 							}
 						}
 					}
@@ -778,7 +872,7 @@ namespace OSM_Parser
 
 			//collinear simplify
 			for (int i = 0; i < list.Count; i++){
-				list[i] = list[i].CollinearSimplify(0.001);
+				list[i] = list[i].CollinearSimplify(0.3);
 			}
 
 			return list;
@@ -795,7 +889,7 @@ namespace OSM_Parser
 				p.verts[j] = v1;
 			}
 			p.ForceCCW();
-			p = p.CollinearSimplify(0.01);
+			p = p.CollinearSimplify(0.3);
 
 			//return new Polygon[] { p };
 

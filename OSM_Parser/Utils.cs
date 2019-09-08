@@ -49,11 +49,19 @@ namespace OSM_Parser
 		{
 			return new vec3(a.x - b.x, a.y - b.y, a.z - b.z);
 		}
+		public static double Dot(vec3 a, vec3 b)
+		{
+			return a.x*b.x + a.y*b.y + a.z*b.z;
+		}
 		public vec3 Normalize()
 		{
 			double l = Math.Sqrt(x * x + y * y + z * z);
 			this *= (1 / l);
 			return this;
+		}
+		public vec3 Snap()
+		{
+			return new vec3(((int)(x*30))/30, ((int)(y*30)) / 30, ((int)(z*30)) / 30);
 		}
 		public override string ToString()
 		{
