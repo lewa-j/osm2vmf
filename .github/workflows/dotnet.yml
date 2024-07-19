@@ -1,3 +1,5 @@
+# Este flujo de trabajo construirá un proyecto .NET en Windows y Linux, almacenará los artefactos en carpetas separadas con nombres específicos
+
 name: .NET
 
 on:
@@ -23,13 +25,13 @@ jobs:
       run: dotnet test --no-build --verbosity normal
     - name: Create artifact folder
       run: |
-        mkdir -p ubuntu-osm2vmf/osm2vmf
-        cp -r bin/Debug/net8.0/* ubuntu-osm2vmf/osm2vmf/
+        mkdir -p OS-linux-osm2vmf/osm2vmf
+        cp -r bin/Debug/net8.0/* OS-linux-osm2vmf/osm2vmf/
     - name: Upload Linux Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: ubuntu-osm2vmf
-        path: ubuntu-osm2vmf/
+        name: linux-artifacts
+        path: OS-linux-osm2vmf/
 
   build-windows:
     runs-on: windows-latest
@@ -47,10 +49,10 @@ jobs:
       run: dotnet test --no-build --verbosity normal
     - name: Create artifact folder
       run: |
-        mkdir windows-osm2vmf\osm2vmf
-        Copy-Item -Recurse -Path "bin/Debug/net8.0/*" -Destination "windows-osm2vmf\osm2vmf\"
+        mkdir OS-windows-osm2vmf\osm2vmf
+        Copy-Item -Recurse -Path "bin/Debug/net8.0/*" -Destination "OS-windows-osm2vmf\osm2vmf\"
     - name: Upload Windows Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: windows-osm2vmf
-        path: windows-osm2vmf/
+        name: windows-artifacts
+        path: OS-windows-osm2vmf/
