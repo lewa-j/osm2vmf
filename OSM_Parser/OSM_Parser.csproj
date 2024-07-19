@@ -4,6 +4,9 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>osm2vmf</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
