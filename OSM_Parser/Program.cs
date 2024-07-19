@@ -38,6 +38,7 @@ namespace OSM_Parser
 
 			ExportOBJ(filename.Replace(".osm", ""), map);
 			ExportVMF(filename.Replace(".osm", ".vmf"), map);
+			ExportMAP(filename.Replace(".osm", ".map"), map);
 		}
 
 		public static void ExportOBJ(string filename, OsmChunk map)
@@ -336,7 +337,122 @@ namespace OSM_Parser
 			sw.Write("\t\t\"lightmapscale\" \"" + Settings.lightmapscale + "\"\n");
 			sw.Write("\t}\n");
 		}
+
+		public static void ExportMAP(string filename, OsmChunk map)
+		{
+			long brushId = 1;
+			StreamWriter sw = new StreamWriter(filename);	
+			double s = 30.0 * Settings.scale;
+
+			sw.Write("// Game: Half-Life\n");
+			sw.Write("// Format: Valve\n");
+			sw.Write("\n{\n");
+			sw.Write("\"wad\" \"\"\n");
+			sw.Write("\"classname\" \"worldspawn\"\n");
+			sw.Write("\"mapversion\" \"220\"\n");
+			//
+			for (int i = 0; i < map.buildings.Count; i++)
+			{
+				OsmBuilding bd = map.buildings[i];
+				//if (bd.outline)
+				//	continue;
+				double h1 = bd.min_height * s;
+				double h2 = bd.height * s;
+				if (h2 > 30000) {
+					Console.WriteLine("building {0} is too high {1}",i,h2);
+				}
+
+				Polygon[] polys = map.GetBuildingPolys(bd);
+				for (int p = 0; p < polys.Length; p++)
+				{
+					sw.Write("\n{\n");
+					brushId++;
+					for (int j = 0; j < polys[p].verts.Length; j++)
+					{
+						vec3 v1 = polys[p].At(j);
+						vec3 v2 = polys[p].At(j + 1);
+						vec3 v3 = new vec3(v2.x, h2, v2.z);
+
+						v1.y = h1;
+						v2.y = h1;
+
+						v1 *= s;
+						v2 *= s;
+						v3 *= s;
+
+						v1.z *= -1;
+						v2.z *= -1;
+						v3.z *= -1;
+
+						v1 = new vec3(v1.x, v1.z, v1.y).Snap();
+						v2 = new vec3(v2.x, v2.z, v2.y).Snap();
+						v3 = new vec3(v3.x, v3.z, v3.y).Snap();
+
+						vec3 uaxis = new vec3(v2.x - v1.x, v2.y - v1.y, 0);
+						uaxis.Normalize();
+
+						sw.Write("( " + v1.ToString() + " ) ( " + v2.ToString() + " ) ( " + v3.ToString() + " ) ");
+						sw.Write("wall");
+						sw.Write(" [ " + uaxis.ToString() + " 0 ]");
+						sw.Write(" [ 0 0 -1 0 ]");
+						sw.Write(" 0 1.0 1.0");
+						sw.Write("\n");
+					}
+					//top
+					sw.Write("( " + new vec3(0, 50, h2).ToString() + " ) ( " + new vec3(50, 50, h2).ToString() + " ) ( " + new vec3(50, 0, h2).ToString() + " ) ");
+					sw.Write("roof");
+					sw.Write(" [ 1 0 0 0 ]");
+					sw.Write(" [ 0 -1 0 0 ]");
+					sw.Write(" 0 1.0 1.0");
+					sw.Write("\n");
+					//bottom
+					sw.Write("( " + new vec3(0, 0, h1).ToString() + " ) ( " + new vec3(50, 0, h1).ToString() + " ) ( " + new vec3(50, 50, h1).ToString() + " ) ");
+					sw.Write("bottom");
+					sw.Write(" [ 1 0 0 0 ]");
+					sw.Write(" [ 0 -1 0 0 ]");
+					sw.Write(" 0 1.0 1.0");
+					sw.Write("\n}\n");//end solid
+				}
+			}
+
+			//sky and ground
+			MAPWriteSolid(sw, new vec3(-12288, -15360, 14000), new vec3(12288, 12288, 14064), "sky");
+			MAPWriteSolid(sw, new vec3(-12288, -15360, 0), new vec3(-12224, 12288, 14064), "sky");
+			MAPWriteSolid(sw, new vec3(12224, -15360, 0), new vec3(12288, 12288, 14064), "sky");
+			MAPWriteSolid(sw, new vec3(-12288, 12224, 0), new vec3(12288, 12288, 14064), "sky");
+			MAPWriteSolid(sw, new vec3(-12288, -15360, 0), new vec3(12288, -15296, 14064), "sky");
+			MAPWriteSolid(sw, new vec3(-12288, -15360, -64), new vec3(12288, 12288, 0), "floor");
+
+			sw.Write("}\n");//end world
+			sw.Close();
+
+			Console.WriteLine("MAP: brushes count {0}", brushId);
+		}
+
+		public static void MAPWriteSolid(StreamWriter sw, vec3 bbmin, vec3 bbmax, string material)
+		{	
+			sw.Write("\n{\n");
+			MAPWriteSide(sw, new vec3(bbmin.x, bbmax.y, bbmax.z), bbmax,                               new vec3(bbmax.x,bbmin.y,bbmax.z), new vec3(0, - 1, 0), material);
+			MAPWriteSide(sw, new vec3(bbmin.x, bbmax.y, bbmax.z), new vec3(bbmin.x, bbmin.y, bbmax.z), bbmin, new vec3(0, 0, -1), material);
+			MAPWriteSide(sw, new vec3(bbmax.x, bbmax.y, bbmin.z), new vec3(bbmax.x, bbmin.y, bbmin.z), new vec3(bbmax.x,bbmin.y,bbmax.z), new vec3(0, 0, -1), material);
+			MAPWriteSide(sw, bbmax,                               new vec3(bbmin.x, bbmax.y, bbmax.z), new vec3(bbmin.x, bbmax.y, bbmin.z), new vec3(0, 0, -1), material);
+			MAPWriteSide(sw, new vec3(bbmax.x, bbmin.y, bbmin.z), bbmin,                               new vec3(bbmin.x, bbmin.y, bbmax.z), new vec3(0, 0, -1), material);
+			MAPWriteSide(sw, new vec3(bbmax.x, bbmin.y, bbmin.z), new vec3(bbmax.x, bbmax.y, bbmin.z), new vec3(bbmin.x, bbmax.y, bbmin.z), new vec3(-1, 0, 0), material);
+			sw.Write("}\n");
+		}
+		public static void MAPWriteSide(StreamWriter sw, vec3 v1, vec3 v2, vec3 v3, vec3 vaxis, string material)
+		{
+
+			vec3 uaxis = new vec3(v2.x - v1.x, v2.y - v1.y, 0);
+			uaxis.Normalize();
+			sw.Write("( " + v1.ToString() + " ) ( " + v2.ToString() + " ) ( " + v3.ToString() + " ) ");
+			sw.Write(material);
+			sw.Write(" [ " + uaxis.ToString() + " 0 ] ");
+			sw.Write(" [ " + vaxis.ToString() + " 0 ] ");
+			sw.Write(" 0 1.0 1.0\n");
+		}
 	}
+
 
 	class Polygon
 	{
