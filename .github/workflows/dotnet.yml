@@ -7,14 +7,8 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
-
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest ]
-
+  build-linux:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET
@@ -27,10 +21,36 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-    - name: Upload Artifacts
+    - name: Create artifact folder
+      run: |
+        mkdir -p ubuntu-osm2vmf/osm2vmf
+        cp -r bin/Debug/net8.0/* ubuntu-osm2vmf/osm2vmf/
+    - name: Upload Linux Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: dotnet-artifacts
-        path: |
-          **/bin/*
-          **/obj/*
+        name: ubuntu-osm2vmf
+        path: ubuntu-osm2vmf/
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+    - name: Create artifact folder
+      run: |
+        mkdir windows-osm2vmf\osm2vmf
+        Copy-Item -Recurse -Path "bin/Debug/net8.0/*" -Destination "windows-osm2vmf\osm2vmf\"
+    - name: Upload Windows Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-osm2vmf
+        path: windows-osm2vmf/
