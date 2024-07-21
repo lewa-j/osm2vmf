@@ -53,12 +53,6 @@ namespace OSM_Parser
 						exportMAP = true;
 						break;
 					case "-novmf":
-						if (!exportOBJ && !exportMAP)
-						{
-							Console.WriteLine("-novmf arg is only valid if -obj or -map is specified.");
-							Usage();
-							return;
-						}
 						exportVMF = false;
 						break;
 					default:
@@ -66,6 +60,13 @@ namespace OSM_Parser
 						Usage();
 						return;
 				}
+			}
+
+			if (!exportVMF && !exportOBJ && !exportMAP)
+			{
+				Console.WriteLine("-novmf argument is only valid if -obj or -map is specified.");
+				Usage();
+				return;
 			}
 
 			OsmChunk map = new OsmChunk();
