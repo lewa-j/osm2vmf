@@ -25,20 +25,85 @@ namespace OSM_Parser
 	{
 		static void Main(string[] args)
 		{
-			String filename = "ny_manhattan1.osm";
-			if (args.Length > 0)
-				filename = args[0];
+			if (args.Length == 0)
+			{
+				Usage();
+				return;
+			}
+
+			string filename = args[0];
+			bool exportVMF = true;
+			bool exportOBJ = false;
+			bool exportMAP = false;
+
+			if (!filename.EndsWith(".osm", StringComparison.OrdinalIgnoreCase))
+			{
+				Console.WriteLine("You must provide the input .osm file as first argument.");
+				return;
+			}
+
+			for (int i = 1; i < args.Length; i++)
+			{
+				switch (args[i].ToLower())
+				{
+					case "-obj":
+						exportOBJ = true;
+						break;
+					case "-map":
+						exportMAP = true;
+						break;
+					case "-novmf":
+						if (!exportOBJ && !exportMAP)
+						{
+							Console.WriteLine("-novmf arg is only valid if -obj or -map is specified.");
+							Usage();
+							return;
+						}
+						exportVMF = false;
+						break;
+					default:
+						Console.WriteLine($"Invalid argument: {args[i]}");
+						Usage();
+						return;
+				}
+			}
 
 			OsmChunk map = new OsmChunk();
 			if (map.Load(filename))
+			{
 				return;
+			}
 
 			if (Settings.cull)
+			{
 				map.Cull(Settings.cullBounding);
+			}
 
-			ExportOBJ(filename.Replace(".osm", ""), map);
-			ExportVMF(filename.Replace(".osm", ".vmf"), map);
-			ExportMAP(filename.Replace(".osm", ".map"), map);
+			if (exportOBJ)
+			{
+				ExportOBJ(filename.Replace(".osm", ""), map);
+			}
+
+			if (exportMAP)
+			{
+				ExportMAP(filename.Replace(".osm", ".map"), map);
+			}
+
+			if (exportVMF)
+			{
+				ExportVMF(filename.Replace(".osm", ".vmf"), map);
+			}
+		}
+
+		static void Usage()
+		{
+			Console.WriteLine("OpenStreetMap to Valve Map Format converter. Also support export OBJ and GoldSrc MAP: https://github.com/lewa-j/osm2vmf\n");
+			Console.WriteLine("You must provide the input .osm file as first argument. Export OSM data from: https://www.openstreetmap.org");
+			Console.WriteLine("Usage: osm2vmf <input.osm> [-obj] [-map] [-novmf]");
+			Console.WriteLine("Optional Arguments:");
+			Console.WriteLine("\t-obj: export as .OBJ");
+			Console.WriteLine("\t-map: export as GoldSrc .MAP");
+			Console.WriteLine("\t-novmf: do not export as .VMF");
 		}
 
 		public static void ExportOBJ(string filename, OsmChunk map)
